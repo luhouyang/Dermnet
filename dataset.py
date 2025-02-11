@@ -5,6 +5,7 @@ from typing import Any, Callable, Optional
 import numpy as np
 
 import torch
+import torch.nn.functional as F
 
 from PIL import Image
 from torchvision.datasets.vision import VisionDataset
@@ -71,9 +72,12 @@ class DermnetDataset(VisionDataset):
                  seed: int = None,
                  fraction: float = None,
                  subset: str = None,
-                 image_color_mode: str = 'rgb'):
+                 image_color_mode: str = 'rgb',
+                 num_classes: int = 23):
 
         super().__init__(root, data_transforms)
+
+        self.num_classes = num_classes
 
         image_root_path = Path(self.root)
 
@@ -144,7 +148,9 @@ class DermnetDataset(VisionDataset):
 
     def __getitem__(self, index: int) -> Any:
         image_path = self.images_names[index]
+
         label = self.labels[index]
+        # label = F.one_hot(torch.tensor([label]), self.num_classes)
 
         with open(image_path, 'rb') as image_file:
             image = Image.open(image_file)
@@ -206,9 +212,9 @@ min_height = 1000
 
 for i in range(dermnet.__len__()):
     sample = dermnet.__getitem__(i)
-    size = sample["dims"]
-    min_width = min(min_width, size[0])
-    min_height = min(min_height, size[1])
+    # size = sample["dims"]
+    # min_width = min(min_width, size[0])
+    # min_height = min(min_height, size[1])
 
 print(min_width, min_height)
 
@@ -217,7 +223,12 @@ sample = dermnet.__getitem__(index)
 image = unnorm(sample["image"])
 image = np.dstack(image.numpy())
 
+# print(sample["label"].numpy())
+
 plt.subplot(1, 1, 1)
+# plt.title(
+#     f"{sample['label'].argmax(-1).numpy()[0]} : {id2label[sample['label'].argmax(-1).numpy()[0]]}"
+# )
 plt.title(f"{sample['label']} : {id2label[sample['label']]}")
 plt.imshow(image)
 plt.show()

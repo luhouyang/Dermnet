@@ -8,6 +8,7 @@ from dataset import DermnetDataset
 
 
 def get_dataloader(data_dir: str,
+                   num_classes: int,
                    data_transforms: Optional[Callable] = transforms.Compose([
                        transforms.CenterCrop(512),
                        transforms.Resize((512, 512)),
@@ -32,7 +33,7 @@ def get_dataloader(data_dir: str,
         x: DataLoader(image_datasets[x],
                       batch_size=batch_size,
                       shuffle=True,
-                      num_workers=16)
+                      num_workers=4)
         for x in ['Train', 'Test']
     }
 
