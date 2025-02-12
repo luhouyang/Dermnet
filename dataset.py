@@ -233,3 +233,79 @@ plt.title(f"{sample['label']} : {id2label[sample['label']]}")
 plt.imshow(image)
 plt.show()
 '''
+
+from pathlib import Path
+from typing import Callable, Optional, Any
+import numpy as np
+from PIL import Image
+import torch
+from torch.utils.data import Dataset
+
+class DermnetDatasetOneFolder(Dataset):
+    def __init__(self,
+                 root: str,
+                 data_transforms: Optional[Callable] = None,
+                 image_color_mode: str = 'rgb',
+                 seed: int = 42,
+                 num_classes: int = 23):
+        super().__init__()
+        self.num_classes = num_classes
+
+        image_root_path = Path(root)
+        if not image_root_path.exists():
+            raise OSError(f"{image_root_path} does not exist.")
+
+        if image_color_mode not in ['rgb', 'grayscale']:
+            raise ValueError(
+                f"{image_color_mode} is an invalid choice. Please choose 'rgb' or 'grayscale'."
+            )
+
+        self.image_color_mode = image_color_mode
+        self.images_names = []
+        self.labels = []
+
+        for subdir in image_root_path.glob("*"):
+            image_dir = image_root_path / subdir
+            if not image_dir.is_dir():
+                continue
+
+            # Assign label based on folder name
+            label = label2id[str(subdir.name)]
+            names = sorted(image_dir.glob("*"))
+            labels = [label for _ in range(len(names))]
+
+            self.images_names += names
+            self.labels += labels
+
+        self.data_transforms = data_transforms
+
+        self.image_list = np.array(self.images_names)
+        self.labels_list = np.array(self.labels)
+
+        if seed:
+            np.random.seed(seed)
+            indices = np.arange(len(self.image_list))
+            np.random.shuffle(indices)
+
+            self.image_list = self.image_list[indices]
+            self.labels_list = self.labels_list[indices]
+
+    def __len__(self):
+        return len(self.images_names)
+
+    def __getitem__(self, index: int) -> Any:
+        image_path = self.images_names[index]
+        label = self.labels[index]
+
+        with open(image_path, 'rb') as image_file:
+            image = Image.open(image_file)
+            if self.image_color_mode == 'rgb':
+                image = image.convert('RGB')
+            elif self.image_color_mode == 'grayscale':
+                image = image.convert('L')
+
+            sample = {"image": image, "label": label}
+            if self.data_transforms:
+                sample["image"] = self.data_transforms(sample["image"])
+
+            return sample

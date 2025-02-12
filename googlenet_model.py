@@ -159,8 +159,8 @@ class ClassifierLayer(nn.Module):
             nn.ReLU(inplace=True),
             nn.Dropout(0.5),
             nn.Linear(1024, num_classes),
-            # nn.Softmax(),
-            nn.ReLU(inplace=True),
+            nn.Softmax(),
+            # nn.ReLU(inplace=True),
         )
 
     def forward(self, x):
